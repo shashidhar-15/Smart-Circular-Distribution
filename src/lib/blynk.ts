@@ -1,7 +1,13 @@
-export interface BlynkConfig {
+export interface BlynkDevice {
+  id: string;
   authToken: string;
   templateId: string;
   templateName: string;
+  deviceName: string;
+}
+
+export interface BlynkConfig {
+  devices: BlynkDevice[];
 }
 
 export interface BlynkMessage {
@@ -16,9 +22,9 @@ export const saveBlynkConfig = (config: BlynkConfig) => {
   localStorage.setItem('blynk_config', JSON.stringify(config));
 };
 
-export const getBlynkConfig = (): BlynkConfig | null => {
+export const getBlynkConfig = (): BlynkConfig => {
   const config = localStorage.getItem('blynk_config');
-  return config ? JSON.parse(config) : null;
+  return config ? JSON.parse(config) : { devices: [] };
 };
 
 export const saveMessage = (message: BlynkMessage) => {

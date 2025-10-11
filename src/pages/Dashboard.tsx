@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getBlynkConfig, saveMessage, type BlynkMessage } from '@/lib/blynk';
+import { getBlynkConfig, saveMessage, type BlynkMessage, type BlynkDevice } from '@/lib/blynk';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Send } from 'lucide-react';
@@ -16,15 +16,20 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [message, setMessage] = useState('');
-  const [recipient, setRecipient] = useState('5th-a');
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [sender, setSender] = useState('');
+  const [devices, setDevices] = useState<BlynkDevice[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     const config = getBlynkConfig();
-    setIsConnected(!!config);
-    if (!config) {
+    setDevices(config.devices);
+    setIsConnected(config.devices.length > 0);
+    
+    if (config.devices.length > 0) {
+      setSelectedDeviceId(config.devices[0].id);
+    } else {
       toast({
         title: "Setup Required",
         description: "Please configure Blynk connection first",
@@ -43,8 +48,8 @@ const Dashboard = () => {
       return;
     }
 
-    const config = getBlynkConfig();
-    if (!config) {
+    const selectedDevice = devices.find(d => d.id === selectedDeviceId);
+    if (!selectedDevice) {
       navigate('/setup');
       return;
     }
@@ -53,7 +58,7 @@ const Dashboard = () => {
     try {
       const { data, error } = await supabase.functions.invoke('blynk-proxy', {
         body: {
-          authToken: config.authToken,
+          authToken: selectedDevice.authToken,
           method: 'PUT',
           endpoint: '/update/V1',
           data: { value: message },
@@ -65,7 +70,7 @@ const Dashboard = () => {
       const newMessage: BlynkMessage = {
         id: Date.now().toString(),
         message,
-        recipient: recipient === '5th-a' ? '5th Sem A' : '5th Sem B',
+        recipient: selectedDevice.deviceName,
         sender,
         timestamp: new Date(),
       };
@@ -73,7 +78,7 @@ const Dashboard = () => {
 
       toast({
         title: "Message Sent",
-        description: `Message sent to ${newMessage.recipient}`,
+        description: `Message sent to ${selectedDevice.deviceName}`,
       });
 
       setMessage('');
@@ -122,14 +127,17 @@ const Dashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="recipient">Select Class</Label>
-                  <Select value={recipient} onValueChange={setRecipient}>
+                  <Label htmlFor="recipient">Select Device</Label>
+                  <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select a device" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="5th-a">5th Sem A</SelectItem>
-                      <SelectItem value="5th-b">5th Sem B</SelectItem>
+                      {devices.map(device => (
+                        <SelectItem key={device.id} value={device.id}>
+                          {device.deviceName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -166,7 +174,7 @@ const Dashboard = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">To:</span>
                     <span className="font-medium">
-                      {recipient === '5th-a' ? '5th Sem A' : '5th Sem B'}
+                      {devices.find(d => d.id === selectedDeviceId)?.deviceName || 'Select a device'}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
