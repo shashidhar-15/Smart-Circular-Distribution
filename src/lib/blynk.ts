@@ -28,6 +28,11 @@ export const getBlynkConfig = (): BlynkConfig => {
   if (!config) return { devices: [] };
   
   const parsedConfig = JSON.parse(config);
+  // Ensure devices array exists
+  if (!parsedConfig.devices || !Array.isArray(parsedConfig.devices)) {
+    return { devices: [] };
+  }
+  
   // Add default virtualPin to devices that don't have it (backward compatibility)
   parsedConfig.devices = parsedConfig.devices.map((device: BlynkDevice, index: number) => ({
     ...device,
