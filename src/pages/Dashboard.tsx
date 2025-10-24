@@ -59,9 +59,8 @@ const Dashboard = () => {
       const { data, error } = await supabase.functions.invoke('blynk-proxy', {
         body: {
           authToken: selectedDevice.authToken,
-          method: 'PUT',
-          endpoint: `/update/${selectedDevice.virtualPin}`,
-          data: { value: message },
+          method: 'GET',
+          endpoint: `/update?token=${selectedDevice.authToken}&${selectedDevice.virtualPin}=${encodeURIComponent(message)}`,
         },
       });
 
