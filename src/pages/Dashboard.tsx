@@ -60,7 +60,7 @@ const Dashboard = () => {
         body: {
           authToken: selectedDevice.authToken,
           method: 'PUT',
-          endpoint: '/update/V1',
+          endpoint: `/update/${selectedDevice.virtualPin}`,
           data: { value: message },
         },
       });

@@ -33,6 +33,7 @@ const BlynkSetup = () => {
       templateId: '',
       templateName: '',
       deviceName: `ESP32 Device ${devices.length + 1}`,
+      virtualPin: `V${devices.length}`,
     };
     setDevices([...devices, newDevice]);
   };
@@ -48,7 +49,7 @@ const BlynkSetup = () => {
   };
 
   const testConnection = async (device: BlynkDevice) => {
-    if (!device.authToken || !device.templateId || !device.deviceName) {
+    if (!device.authToken || !device.templateId || !device.deviceName || !device.virtualPin) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -87,7 +88,7 @@ const BlynkSetup = () => {
 
   const handleSaveAll = () => {
     const hasInvalidDevices = devices.some(
-      device => !device.authToken || !device.templateId || !device.deviceName
+      device => !device.authToken || !device.templateId || !device.deviceName || !device.virtualPin
     );
     
     if (hasInvalidDevices) {
@@ -189,6 +190,17 @@ const BlynkSetup = () => {
                           onChange={(e) => updateDevice(device.id, 'templateName', e.target.value)}
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`virtualPin-${device.id}`}>Virtual Pin</Label>
+                      <Input
+                        id={`virtualPin-${device.id}`}
+                        type="text"
+                        placeholder="e.g., V0, V1, V3"
+                        value={device.virtualPin}
+                        onChange={(e) => updateDevice(device.id, 'virtualPin', e.target.value.toUpperCase())}
+                      />
                     </div>
 
                     <Button

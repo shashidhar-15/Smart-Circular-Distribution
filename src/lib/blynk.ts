@@ -4,6 +4,7 @@ export interface BlynkDevice {
   templateId: string;
   templateName: string;
   deviceName: string;
+  virtualPin: string;
 }
 
 export interface BlynkConfig {
