@@ -56,7 +56,7 @@ const Dashboard = () => {
 
     setIsSending(true);
     try {
-      const formattedMessage = `From: ${sender}\n${message}`;
+      const formattedMessage = `From: ${sender}\nmsg: ${message}`;
       const { data, error } = await supabase.functions.invoke('blynk-proxy', {
         body: {
           authToken: selectedDevice.authToken,
