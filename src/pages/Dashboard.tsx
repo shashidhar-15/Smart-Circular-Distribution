@@ -56,11 +56,12 @@ const Dashboard = () => {
 
     setIsSending(true);
     try {
+      const formattedMessage = `From: ${sender}\n${message}`;
       const { data, error } = await supabase.functions.invoke('blynk-proxy', {
         body: {
           authToken: selectedDevice.authToken,
           method: 'GET',
-          endpoint: `/update?token=${selectedDevice.authToken}&${selectedDevice.virtualPin}=${encodeURIComponent(message)}`,
+          endpoint: `/update?token=${selectedDevice.authToken}&${selectedDevice.virtualPin}=${encodeURIComponent(formattedMessage)}`,
         },
       });
 
