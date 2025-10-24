@@ -25,7 +25,16 @@ export const saveBlynkConfig = (config: BlynkConfig) => {
 
 export const getBlynkConfig = (): BlynkConfig => {
   const config = localStorage.getItem('blynk_config');
-  return config ? JSON.parse(config) : { devices: [] };
+  if (!config) return { devices: [] };
+  
+  const parsedConfig = JSON.parse(config);
+  // Add default virtualPin to devices that don't have it (backward compatibility)
+  parsedConfig.devices = parsedConfig.devices.map((device: BlynkDevice, index: number) => ({
+    ...device,
+    virtualPin: device.virtualPin || `V${index}`,
+  }));
+  
+  return parsedConfig;
 };
 
 export const saveMessage = (message: BlynkMessage) => {
