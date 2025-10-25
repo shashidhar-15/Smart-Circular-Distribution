@@ -16,6 +16,7 @@ const BlynkSetup = () => {
   const { toast } = useToast();
   const [devices, setDevices] = useState<BlynkDevice[]>([]);
   const [testingDeviceId, setTestingDeviceId] = useState<string | null>(null);
+  const [connectedDevices, setConnectedDevices] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const savedConfig = getBlynkConfig();
@@ -70,12 +71,18 @@ const BlynkSetup = () => {
 
       if (error) throw error;
 
+      setConnectedDevices(prev => new Set(prev).add(device.id));
       toast({
         title: "Connection Successful",
         description: `${device.deviceName} is connected!`,
       });
     } catch (error) {
       console.error('Connection error:', error);
+      setConnectedDevices(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(device.id);
+        return newSet;
+      });
       toast({
         title: "Connection Failed",
         description: "Unable to connect to Blynk. Please check your credentials.",
@@ -132,7 +139,7 @@ const BlynkSetup = () => {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{device.deviceName || `ESP32 Device ${index + 1}`}</CardTitle>
                       <div className="flex items-center gap-2">
-                        <StatusBadge connected={false} />
+                        <StatusBadge connected={connectedDevices.has(device.id)} />
                         {devices.length > 1 && (
                           <Button
                             onClick={() => removeDevice(device.id)}
