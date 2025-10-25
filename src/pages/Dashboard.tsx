@@ -39,10 +39,10 @@ const Dashboard = () => {
   }, []);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !sender.trim()) {
+    if (!message.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please enter both message and sender name",
+        description: "Please enter a message",
         variant: "destructive",
       });
       return;
@@ -56,12 +56,11 @@ const Dashboard = () => {
 
     setIsSending(true);
     try {
-      const formattedMessage = `From: ${sender}\r\nmsg: ${message}`;
       const { data, error } = await supabase.functions.invoke('blynk-proxy', {
         body: {
           authToken: selectedDevice.authToken,
           method: 'GET',
-          endpoint: `/update?token=${selectedDevice.authToken}&${selectedDevice.virtualPin}=${encodeURIComponent(formattedMessage)}`,
+          endpoint: `/update?token=${selectedDevice.authToken}&${selectedDevice.virtualPin}=${encodeURIComponent(message)}`,
         },
       });
 
@@ -71,7 +70,7 @@ const Dashboard = () => {
         id: Date.now().toString(),
         message,
         recipient: selectedDevice.deviceName,
-        sender,
+        sender: sender || 'Anonymous',
         timestamp: new Date(),
       };
       saveMessage(newMessage);
@@ -115,18 +114,6 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sender">Your Name</Label>
-                  <input
-                    id="sender"
-                    type="text"
-                    placeholder="e.g., Prof. Smith"
-                    value={sender}
-                    onChange={(e) => setSender(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="recipient">Select Device</Label>
                   <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
                     <SelectTrigger>
@@ -149,7 +136,7 @@ const Dashboard = () => {
                     placeholder="Type your message here..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    rows={5}
+                    rows={8}
                   />
                 </div>
 
@@ -176,10 +163,6 @@ const Dashboard = () => {
                     <span className="font-medium">
                       {devices.find(d => d.id === selectedDeviceId)?.deviceName || 'Select a device'}
                     </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">From:</span>
-                    <span className="font-medium">{sender || 'Not specified'}</span>
                   </div>
                   <div className="pt-2 border-t border-border">
                     <p className="text-sm text-muted-foreground mb-1">Message:</p>
