@@ -94,23 +94,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-accent/10">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between animate-fade-in">
             <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <p className="text-muted-foreground mt-1">Send messages to your classes</p>
+              <h1 className="text-4xl font-bold gradient-text">Dashboard</h1>
+              <p className="text-muted-foreground mt-2">Send messages to your classes</p>
             </div>
             <StatusBadge connected={isConnected} />
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Send Message</CardTitle>
-                <CardDescription>Compose and send a message to a class</CardDescription>
+            <Card className="shadow-hover border-2 border-primary/20 bg-gradient-card animate-fade-in hover:shadow-glow transition-all duration-300">
+              <CardHeader className="bg-gradient-primary text-white rounded-t-lg">
+                <CardTitle className="text-2xl">Send Message</CardTitle>
+                <CardDescription className="text-white/90">Compose and send a message to a class</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -143,18 +143,18 @@ const Dashboard = () => {
                 <Button
                   onClick={handleSendMessage}
                   disabled={isSending || !isConnected}
-                  className="w-full"
+                  className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 h-12 text-lg font-semibold"
                 >
-                  <Send className="w-4 h-4 mr-2" />
+                  <Send className="w-5 h-5 mr-2" />
                   {isSending ? "Sending..." : "Send Message"}
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle>Message Preview</CardTitle>
-                <CardDescription>How your message will appear</CardDescription>
+            <Card className="shadow-hover border-2 border-accent/20 bg-gradient-card animate-fade-in hover:shadow-glow transition-all duration-300" style={{ animationDelay: '0.1s' }}>
+              <CardHeader className="bg-gradient-to-r from-accent to-primary text-white rounded-t-lg">
+                <CardTitle className="text-2xl">Message Preview</CardTitle>
+                <CardDescription className="text-white/90">How your message will appear</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="bg-muted p-4 rounded-lg space-y-3">

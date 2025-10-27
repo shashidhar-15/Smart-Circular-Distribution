@@ -66,11 +66,20 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-card">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
-          <CardDescription className="text-center">
+    <div className="min-h-screen bg-gradient-hero animate-gradient flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-primary opacity-30 blur-3xl rounded-full animate-pulse"></div>
+        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-accent opacity-20 blur-3xl rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      <Card className="w-full max-w-md shadow-glow border-2 border-primary/20 backdrop-blur-sm bg-card/95 relative z-10 animate-fade-in">
+        <CardHeader className="space-y-1 text-center">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow">
+            <LogIn className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle className="text-3xl font-bold gradient-text">Welcome Back</CardTitle>
+          <CardDescription className="text-center text-base">
             Enter your credentials to access the messaging system
           </CardDescription>
         </CardHeader>
@@ -102,10 +111,10 @@ const Login = () => {
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 text-lg h-12 font-semibold"
               disabled={isLoading}
             >
-              <LogIn className="w-4 h-4 mr-2" />
+              {!isLoading && <LogIn className="w-5 h-5 mr-2" />}
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
