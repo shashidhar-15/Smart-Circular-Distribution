@@ -24,7 +24,7 @@ const Messages = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <Navigation />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 pt-28">
         <div className="max-w-4xl mx-auto space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Message History</h1>
