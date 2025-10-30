@@ -28,12 +28,15 @@ const BlynkSetup = () => {
   }, []);
 
   const addNewDevice = () => {
+    const classNames = ['5th A', '5th B', '5th C', '5th D', '5th E'];
+    const defaultName = classNames[devices.length] || `Class ${devices.length + 1}`;
+    
     const newDevice: BlynkDevice = {
       id: Date.now().toString(),
       authToken: '',
       templateId: '',
       templateName: '',
-      deviceName: `ESP32 Device ${devices.length + 1}`,
+      deviceName: defaultName,
       virtualPin: `V${devices.length}`,
     };
     setDevices([...devices, newDevice]);

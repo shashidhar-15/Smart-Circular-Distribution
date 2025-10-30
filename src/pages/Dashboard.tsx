@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getBlynkConfig, saveMessage, type BlynkMessage, type BlynkDevice } from '@/lib/blynk';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [message, setMessage] = useState('');
-  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
   const [sender, setSender] = useState('');
   const [devices, setDevices] = useState<BlynkDevice[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -27,9 +27,7 @@ const Dashboard = () => {
     setDevices(config.devices);
     setIsConnected(config.devices.length > 0);
     
-    if (config.devices.length > 0) {
-      setSelectedDeviceId(config.devices[0].id);
-    } else {
+    if (config.devices.length === 0) {
       toast({
         title: "Setup Required",
         description: "Please configure Blynk connection first",
@@ -37,6 +35,22 @@ const Dashboard = () => {
       });
     }
   }, []);
+
+  const toggleDeviceSelection = (deviceId: string) => {
+    setSelectedDeviceIds(prev => 
+      prev.includes(deviceId) 
+        ? prev.filter(id => id !== deviceId)
+        : [...prev, deviceId]
+    );
+  };
+
+  const toggleAllDevices = () => {
+    if (selectedDeviceIds.length === devices.length) {
+      setSelectedDeviceIds([]);
+    } else {
+      setSelectedDeviceIds(devices.map(d => d.id));
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!message.trim()) {
@@ -48,37 +62,63 @@ const Dashboard = () => {
       return;
     }
 
-    const selectedDevice = devices.find(d => d.id === selectedDeviceId);
-    if (!selectedDevice) {
+    if (selectedDeviceIds.length === 0) {
+      toast({
+        title: "No Devices Selected",
+        description: "Please select at least one device",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedDevices = devices.filter(d => selectedDeviceIds.includes(d.id));
+    if (selectedDevices.length === 0) {
       navigate('/setup');
       return;
     }
 
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('blynk-proxy', {
-        body: {
-          authToken: selectedDevice.authToken,
-          method: 'GET',
-          endpoint: `/update?token=${selectedDevice.authToken}&${selectedDevice.virtualPin}=${encodeURIComponent(message)}`,
-        },
+      const sendPromises = selectedDevices.map(device => 
+        supabase.functions.invoke('blynk-proxy', {
+          body: {
+            authToken: device.authToken,
+            method: 'GET',
+            endpoint: `/update?token=${device.authToken}&${device.virtualPin}=${encodeURIComponent(message)}`,
+          },
+        })
+      );
+
+      const results = await Promise.allSettled(sendPromises);
+      
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failCount = results.filter(r => r.status === 'rejected').length;
+
+      selectedDevices.forEach(device => {
+        const newMessage: BlynkMessage = {
+          id: `${Date.now()}-${device.id}`,
+          message,
+          recipient: device.deviceName,
+          sender: sender || 'Anonymous',
+          timestamp: new Date(),
+        };
+        saveMessage(newMessage);
       });
 
-      if (error) throw error;
+      if (successCount > 0) {
+        toast({
+          title: "Messages Sent",
+          description: `Message sent to ${successCount} device(s)${failCount > 0 ? `, ${failCount} failed` : ''}`,
+        });
+      }
 
-      const newMessage: BlynkMessage = {
-        id: Date.now().toString(),
-        message,
-        recipient: selectedDevice.deviceName,
-        sender: sender || 'Anonymous',
-        timestamp: new Date(),
-      };
-      saveMessage(newMessage);
-
-      toast({
-        title: "Message Sent",
-        description: `Message sent to ${selectedDevice.deviceName}`,
-      });
+      if (failCount > 0 && successCount === 0) {
+        toast({
+          title: "Send Failed",
+          description: "Unable to send messages. Please check your connections.",
+          variant: "destructive",
+        });
+      }
 
       setMessage('');
     } catch (error) {
@@ -114,19 +154,37 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="recipient">Select Device</Label>
-                  <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a device" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {devices.map(device => (
-                        <SelectItem key={device.id} value={device.id}>
+                  <Label>Select Classes</Label>
+                  <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+                    <div className="flex items-center space-x-2 pb-2 border-b border-border">
+                      <Checkbox 
+                        id="all-classes"
+                        checked={selectedDeviceIds.length === devices.length && devices.length > 0}
+                        onCheckedChange={toggleAllDevices}
+                      />
+                      <label
+                        htmlFor="all-classes"
+                        className="text-sm font-semibold cursor-pointer select-none"
+                      >
+                        All Classes
+                      </label>
+                    </div>
+                    {devices.map(device => (
+                      <div key={device.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={device.id}
+                          checked={selectedDeviceIds.includes(device.id)}
+                          onCheckedChange={() => toggleDeviceSelection(device.id)}
+                        />
+                        <label
+                          htmlFor={device.id}
+                          className="text-sm font-medium cursor-pointer select-none"
+                        >
                           {device.deviceName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -142,11 +200,11 @@ const Dashboard = () => {
 
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isSending || !isConnected}
-                  className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 h-12 text-lg font-semibold"
+                  disabled={isSending || !isConnected || selectedDeviceIds.length === 0}
+                  className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 h-12 text-lg font-semibold text-white"
                 >
                   <Send className="w-5 h-5 mr-2" />
-                  {isSending ? "Sending..." : "Send Message"}
+                  {isSending ? "Sending..." : `Send to ${selectedDeviceIds.length} Class${selectedDeviceIds.length !== 1 ? 'es' : ''}`}
                 </Button>
               </CardContent>
             </Card>
@@ -161,7 +219,13 @@ const Dashboard = () => {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">To:</span>
                     <span className="font-medium">
-                      {devices.find(d => d.id === selectedDeviceId)?.deviceName || 'Select a device'}
+                      {selectedDeviceIds.length === 0 
+                        ? 'No classes selected' 
+                        : selectedDeviceIds.length === devices.length 
+                        ? 'All Classes'
+                        : devices.filter(d => selectedDeviceIds.includes(d.id))
+                            .map(d => d.deviceName)
+                            .join(', ')}
                     </span>
                   </div>
                   <div className="pt-2 border-t border-border">
