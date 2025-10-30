@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getBlynkConfig, saveMessage, type BlynkMessage, type BlynkDevice } from '@/lib/blynk';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [message, setMessage] = useState('');
-  const [selectedDeviceIds, setSelectedDeviceIds] = useState<string[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [sender, setSender] = useState('');
   const [devices, setDevices] = useState<BlynkDevice[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -36,22 +36,6 @@ const Dashboard = () => {
     }
   }, []);
 
-  const toggleDeviceSelection = (deviceId: string) => {
-    setSelectedDeviceIds(prev => 
-      prev.includes(deviceId) 
-        ? prev.filter(id => id !== deviceId)
-        : [...prev, deviceId]
-    );
-  };
-
-  const toggleAllDevices = () => {
-    if (selectedDeviceIds.length === devices.length) {
-      setSelectedDeviceIds([]);
-    } else {
-      setSelectedDeviceIds(devices.map(d => d.id));
-    }
-  };
-
   const handleSendMessage = async () => {
     if (!message.trim()) {
       toast({
@@ -62,16 +46,20 @@ const Dashboard = () => {
       return;
     }
 
-    if (selectedDeviceIds.length === 0) {
+    if (!selectedDeviceId) {
       toast({
-        title: "No Devices Selected",
-        description: "Please select at least one device",
+        title: "No Device Selected",
+        description: "Please select a device",
         variant: "destructive",
       });
       return;
     }
 
-    const selectedDevices = devices.filter(d => selectedDeviceIds.includes(d.id));
+    const isAllDevices = selectedDeviceId === 'all';
+    const selectedDevices = isAllDevices 
+      ? devices 
+      : devices.filter(d => d.id === selectedDeviceId);
+    
     if (selectedDevices.length === 0) {
       navigate('/setup');
       return;
@@ -107,15 +95,17 @@ const Dashboard = () => {
 
       if (successCount > 0) {
         toast({
-          title: "Messages Sent",
-          description: `Message sent to ${successCount} device(s)${failCount > 0 ? `, ${failCount} failed` : ''}`,
+          title: isAllDevices ? "Messages Sent" : "Message Sent",
+          description: isAllDevices 
+            ? `Message sent to ${successCount} device(s)${failCount > 0 ? `, ${failCount} failed` : ''}`
+            : "Your message has been sent successfully",
         });
       }
 
       if (failCount > 0 && successCount === 0) {
         toast({
           title: "Send Failed",
-          description: "Unable to send messages. Please check your connections.",
+          description: "Unable to send message. Please check your connection.",
           variant: "destructive",
         });
       }
@@ -154,37 +144,20 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Select Classes</Label>
-                  <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
-                    <div className="flex items-center space-x-2 pb-2 border-b border-border">
-                      <Checkbox 
-                        id="all-classes"
-                        checked={selectedDeviceIds.length === devices.length && devices.length > 0}
-                        onCheckedChange={toggleAllDevices}
-                      />
-                      <label
-                        htmlFor="all-classes"
-                        className="text-sm font-semibold cursor-pointer select-none"
-                      >
-                        All Classes
-                      </label>
-                    </div>
-                    {devices.map(device => (
-                      <div key={device.id} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={device.id}
-                          checked={selectedDeviceIds.includes(device.id)}
-                          onCheckedChange={() => toggleDeviceSelection(device.id)}
-                        />
-                        <label
-                          htmlFor={device.id}
-                          className="text-sm font-medium cursor-pointer select-none"
-                        >
+                  <Label htmlFor="device">Select Class</Label>
+                  <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
+                    <SelectTrigger id="device">
+                      <SelectValue placeholder="Select a class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Classes</SelectItem>
+                      {devices.map(device => (
+                        <SelectItem key={device.id} value={device.id}>
                           {device.deviceName}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -200,32 +173,30 @@ const Dashboard = () => {
 
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isSending || !isConnected || selectedDeviceIds.length === 0}
+                  disabled={isSending || !isConnected || !selectedDeviceId}
                   className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300 h-12 text-lg font-semibold text-white"
                 >
                   <Send className="w-5 h-5 mr-2" />
-                  {isSending ? "Sending..." : `Send to ${selectedDeviceIds.length} Class${selectedDeviceIds.length !== 1 ? 'es' : ''}`}
+                  {isSending ? "Sending..." : "Send Message"}
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="shadow-hover border-2 border-accent/20 bg-gradient-card animate-fade-in hover:shadow-glow transition-all duration-300" style={{ animationDelay: '0.1s' }}>
+            <Card className="shadow-hover border-2 border-accent/20 bg-gradient-card animate-fade-in hover:shadow-glow transition-all duration-300 mt-6" style={{ animationDelay: '0.1s' }}>
               <CardHeader className="bg-gradient-to-r from-accent to-primary text-white rounded-t-lg">
                 <CardTitle className="text-2xl">Message Preview</CardTitle>
                 <CardDescription className="text-white/90">How your message will appear</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="bg-muted p-4 rounded-lg space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">To:</span>
                     <span className="font-medium">
-                      {selectedDeviceIds.length === 0 
-                        ? 'No classes selected' 
-                        : selectedDeviceIds.length === devices.length 
+                      {!selectedDeviceId 
+                        ? 'No class selected' 
+                        : selectedDeviceId === 'all'
                         ? 'All Classes'
-                        : devices.filter(d => selectedDeviceIds.includes(d.id))
-                            .map(d => d.deviceName)
-                            .join(', ')}
+                        : devices.find(d => d.id === selectedDeviceId)?.deviceName || 'Unknown'}
                     </span>
                   </div>
                   <div className="pt-2 border-t border-border">
