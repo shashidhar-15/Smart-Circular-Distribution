@@ -85,6 +85,11 @@ const Settings = () => {
                   <span className="font-medium">ESP32 + Blynk Cloud</span>
                 </div>
               </div>
+              <div className="pt-4 border-t">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Smart Circular Distribution was created to simplify how important announcements and circulars reach students. Instead of relying on manual communication, our system ensures instant, reliable, and transparent message delivery through connected devices, helping every student stay informed without delay.
+                </p>
+              </div>
             </CardContent>
           </Card>
         </div>
