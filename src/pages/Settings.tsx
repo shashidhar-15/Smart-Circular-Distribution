@@ -78,7 +78,7 @@ const Settings = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">System</span>
-                  <span className="font-medium">Smart Distribution System</span>
+                  <span className="font-medium">Smart Circular Distribution System</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Platform</span>
