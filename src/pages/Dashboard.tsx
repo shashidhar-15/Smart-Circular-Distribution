@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [message, setMessage] = useState('');
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [sender, setSender] = useState('');
+  const [urgency, setUrgency] = useState<'0' | '1'>('0'); // 0 = normal, 1 = urgent
   const [devices, setDevices] = useState<BlynkDevice[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -46,6 +47,15 @@ const Dashboard = () => {
       return;
     }
 
+    if (!sender.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a sender name",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedDeviceId) {
       toast({
         title: "No Device Selected",
@@ -67,12 +77,13 @@ const Dashboard = () => {
 
     setIsSending(true);
     try {
+      // Send to V0 (message), V1 (sender), V2 (urgency) for each device
       const sendPromises = selectedDevices.map(device => 
         supabase.functions.invoke('blynk-proxy', {
           body: {
             authToken: device.authToken,
             method: 'GET',
-            endpoint: `/update?token=${device.authToken}&${device.virtualPin}=${encodeURIComponent(message)}`,
+            endpoint: `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V1=${encodeURIComponent(sender)}&V2=${urgency}`,
           },
         })
       );
@@ -161,13 +172,38 @@ const Dashboard = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="sender">Sender Name</Label>
+                  <input
+                    id="sender"
+                    type="text"
+                    placeholder="Enter your name..."
+                    value={sender}
+                    onChange={(e) => setSender(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="urgency">Urgency Level</Label>
+                  <Select value={urgency} onValueChange={(value) => setUrgency(value as '0' | '1')}>
+                    <SelectTrigger id="urgency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Normal (2 sec beep)</SelectItem>
+                      <SelectItem value="1">Urgent (double beep)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
                   <Textarea
                     id="message"
                     placeholder="Type your message here..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    rows={8}
+                    rows={6}
                   />
                 </div>
 
@@ -197,6 +233,16 @@ const Dashboard = () => {
                         : selectedDeviceId === 'all'
                         ? 'All Classes'
                         : devices.find(d => d.id === selectedDeviceId)?.deviceName || 'Unknown'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">From:</span>
+                    <span className="font-medium">{sender || 'No sender'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Urgency:</span>
+                    <span className={`font-medium ${urgency === '1' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      {urgency === '1' ? 'Urgent' : 'Normal'}
                     </span>
                   </div>
                   <div className="pt-2 border-t border-border">

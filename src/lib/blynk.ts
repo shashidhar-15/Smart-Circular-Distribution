@@ -4,7 +4,12 @@ export interface BlynkDevice {
   templateId: string;
   templateName: string;
   deviceName: string;
-  virtualPin: string;
+  virtualPin: string; // Kept for backward compatibility
+  // Virtual pin mapping:
+  // V0 - Message text (string)
+  // V1 - Sender name (string)
+  // V2 - Urgency flag (0=normal, 1=urgent)
+  // V3 - Acknowledgment flag (0=not ack, 1=ack)
 }
 
 export interface BlynkConfig {
