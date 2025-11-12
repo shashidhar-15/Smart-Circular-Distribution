@@ -22,6 +22,8 @@ export interface BlynkMessage {
   recipient: string;
   sender: string;
   timestamp: Date;
+  deviceIds: string[]; // Track which devices received this message
+  acknowledgments: { [deviceId: string]: boolean }; // Track ack status per device
 }
 
 export const saveBlynkConfig = (config: BlynkConfig) => {
@@ -51,6 +53,16 @@ export const saveMessage = (message: BlynkMessage) => {
   const messages = getMessages();
   messages.unshift(message);
   localStorage.setItem('blynk_messages', JSON.stringify(messages.slice(0, 50))); // Keep last 50
+};
+
+export const updateMessageAcknowledgment = (messageId: string, deviceId: string, isAcknowledged: boolean) => {
+  const messages = getMessages();
+  const messageIndex = messages.findIndex(m => m.id === messageId);
+  
+  if (messageIndex !== -1) {
+    messages[messageIndex].acknowledgments[deviceId] = isAcknowledged;
+    localStorage.setItem('blynk_messages', JSON.stringify(messages));
+  }
 };
 
 export const getMessages = (): BlynkMessage[] => {
