@@ -2,13 +2,28 @@ import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getMessages, type BlynkMessage } from '@/lib/blynk';
-import { Clock, User, Send } from 'lucide-react';
+import { Clock, User, Send, Check, CheckCheck } from 'lucide-react';
 
 const Messages = () => {
   const [messages, setMessages] = useState<BlynkMessage[]>([]);
 
   useEffect(() => {
-    setMessages(getMessages());
+    const loadMessages = () => {
+      setMessages(getMessages());
+    };
+
+    loadMessages();
+
+    // Listen for acknowledgment updates
+    const handleAckUpdate = () => {
+      loadMessages();
+    };
+
+    window.addEventListener('acknowledgment-updated', handleAckUpdate);
+
+    return () => {
+      window.removeEventListener('acknowledgment-updated', handleAckUpdate);
+    };
   }, []);
 
   const formatDate = (date: Date) => {
@@ -40,31 +55,53 @@ const Messages = () => {
                 </CardContent>
               </Card>
             ) : (
-              messages.map((msg) => (
-                <Card key={msg.id} className="shadow-card hover:shadow-hover transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{msg.message}</CardTitle>
-                        <CardDescription className="mt-2 space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Send className="w-3 h-3" />
-                            <span>To: <span className="font-medium text-foreground">{msg.recipient}</span></span>
+              messages.map((msg) => {
+                const totalDevices = msg.deviceIds?.length || 0;
+                const acknowledgedCount = msg.acknowledgments 
+                  ? Object.values(msg.acknowledgments).filter(Boolean).length 
+                  : 0;
+                const allAcknowledged = totalDevices > 0 && acknowledgedCount === totalDevices;
+
+                return (
+                  <Card key={msg.id} className="shadow-card hover:shadow-hover transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg">{msg.message}</CardTitle>
+                            {totalDevices > 0 && (
+                              <div className="flex items-center gap-1">
+                                {allAcknowledged ? (
+                                  <CheckCheck className="w-4 h-4 text-primary" />
+                                ) : (
+                                  <Check className="w-4 h-4 text-muted-foreground" />
+                                )}
+                                <span className="text-xs text-muted-foreground">
+                                  {acknowledgedCount}/{totalDevices}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <User className="w-3 h-3" />
-                            <span>From: <span className="font-medium text-foreground">{msg.sender}</span></span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Clock className="w-3 h-3" />
-                            <span>{formatDate(msg.timestamp)}</span>
-                          </div>
-                        </CardDescription>
+                          <CardDescription className="mt-2 space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Send className="w-3 h-3" />
+                              <span>To: <span className="font-medium text-foreground">{msg.recipient}</span></span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <User className="w-3 h-3" />
+                              <span>From: <span className="font-medium text-foreground">{msg.sender}</span></span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-3 h-3" />
+                              <span>{formatDate(msg.timestamp)}</span>
+                            </div>
+                          </CardDescription>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))
+                    </CardHeader>
+                  </Card>
+                );
+              })
             )}
           </div>
         </div>

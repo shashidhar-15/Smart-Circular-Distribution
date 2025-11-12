@@ -7,10 +7,69 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getBlynkConfig, saveMessage, type BlynkMessage, type BlynkDevice } from '@/lib/blynk';
+import { getBlynkConfig, saveMessage, updateMessageAcknowledgment, type BlynkMessage, type BlynkDevice } from '@/lib/blynk';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Send } from 'lucide-react';
+
+// Store active polling intervals
+const activePolls = new Map<string, NodeJS.Timeout>();
+
+const startAcknowledgmentPolling = (messageId: string, devices: BlynkDevice[]) => {
+  // Clear any existing poll for this message
+  if (activePolls.has(messageId)) {
+    clearInterval(activePolls.get(messageId));
+  }
+
+  let allAcknowledged = false;
+
+  const pollInterval = setInterval(async () => {
+    if (allAcknowledged) {
+      clearInterval(pollInterval);
+      activePolls.delete(messageId);
+      return;
+    }
+
+    try {
+      const ackPromises = devices.map(device =>
+        supabase.functions.invoke('blynk-proxy', {
+          body: {
+            authToken: device.authToken,
+            method: 'GET',
+            endpoint: `/get?token=${device.authToken}&V3`,
+          },
+        }).then(result => ({
+          deviceId: device.id,
+          acknowledged: result.data?.data === '1' || result.data?.data === 1,
+        }))
+      );
+
+      const ackResults = await Promise.all(ackPromises);
+      
+      ackResults.forEach(({ deviceId, acknowledged }) => {
+        updateMessageAcknowledgment(messageId, deviceId, acknowledged);
+      });
+
+      // Check if all devices have acknowledged
+      allAcknowledged = ackResults.every(r => r.acknowledged);
+
+      // Dispatch custom event to notify Messages page of updates
+      window.dispatchEvent(new CustomEvent('acknowledgment-updated'));
+    } catch (error) {
+      console.error('Error polling acknowledgments:', error);
+    }
+  }, 5000); // Poll every 5 seconds
+
+  activePolls.set(messageId, pollInterval);
+
+  // Clean up after 1 hour
+  setTimeout(() => {
+    if (activePolls.has(messageId)) {
+      clearInterval(activePolls.get(messageId));
+      activePolls.delete(messageId);
+    }
+  }, 3600000);
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -77,6 +136,18 @@ const Dashboard = () => {
 
     setIsSending(true);
     try {
+      // First, reset V3 (acknowledgment) to 0 for all devices
+      const resetPromises = selectedDevices.map(device =>
+        supabase.functions.invoke('blynk-proxy', {
+          body: {
+            authToken: device.authToken,
+            method: 'GET',
+            endpoint: `/update?token=${device.authToken}&V3=0`,
+          },
+        })
+      );
+      await Promise.all(resetPromises);
+
       // Send to V0 (message), V1 (sender), V2 (urgency) for each device
       const sendPromises = selectedDevices.map(device => 
         supabase.functions.invoke('blynk-proxy', {
@@ -93,16 +164,25 @@ const Dashboard = () => {
       const successCount = results.filter(r => r.status === 'fulfilled').length;
       const failCount = results.filter(r => r.status === 'rejected').length;
 
-      selectedDevices.forEach(device => {
-        const newMessage: BlynkMessage = {
-          id: `${Date.now()}-${device.id}`,
-          message,
-          recipient: device.deviceName,
-          sender: sender || 'Anonymous',
-          timestamp: new Date(),
-        };
-        saveMessage(newMessage);
-      });
+      // Save message with acknowledgment tracking
+      const messageId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const deviceIds = selectedDevices.map(d => d.id);
+      const acknowledgments: { [key: string]: boolean } = {};
+      deviceIds.forEach(id => { acknowledgments[id] = false; });
+
+      const newMessage: BlynkMessage = {
+        id: messageId,
+        message,
+        recipient: isAllDevices ? 'All Classes' : selectedDevices[0].deviceName,
+        sender: sender || 'Anonymous',
+        timestamp: new Date(),
+        deviceIds,
+        acknowledgments,
+      };
+      saveMessage(newMessage);
+
+      // Start polling for acknowledgments
+      startAcknowledgmentPolling(messageId, selectedDevices);
 
       if (successCount > 0) {
         toast({
