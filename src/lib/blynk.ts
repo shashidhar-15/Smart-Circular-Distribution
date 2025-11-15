@@ -41,9 +41,9 @@ export const getBlynkConfig = (): BlynkConfig => {
   }
   
   // Add default virtualPin to devices that don't have it (backward compatibility)
-  parsedConfig.devices = parsedConfig.devices.map((device: BlynkDevice, index: number) => ({
+  parsedConfig.devices = parsedConfig.devices.map((device: BlynkDevice) => ({
     ...device,
-    virtualPin: device.virtualPin || `V${index}`,
+    virtualPin: device.virtualPin || 'V0',
   }));
   
   return parsedConfig;
