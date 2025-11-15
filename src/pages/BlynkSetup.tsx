@@ -34,7 +34,7 @@ const BlynkSetup = () => {
       templateId: '',
       templateName: '',
       deviceName: `ESP32 Device ${devices.length + 1}`,
-      virtualPin: `V${devices.length}`,
+      virtualPin: 'V0',
     };
     setDevices([...devices, newDevice]);
   };
