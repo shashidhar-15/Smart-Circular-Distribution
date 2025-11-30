@@ -148,16 +148,29 @@ const Dashboard = () => {
       );
       await Promise.all(resetPromises);
 
-      // Send to V0 (message), V1 (sender), V2 (urgency) for each device
-      const sendPromises = selectedDevices.map(device => 
+      // Send V0 (message) and V2 (urgency) first
+      const sendMessagePromises = selectedDevices.map(device => 
         supabase.functions.invoke('blynk-proxy', {
           body: {
             authToken: device.authToken,
             method: 'GET',
-            endpoint: `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V1=${encodeURIComponent(sender)}&V2=${urgency}`,
+            endpoint: `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V2=${urgency}`,
           },
         })
       );
+
+      // Send V1 (sender) separately to ensure it updates
+      const sendSenderPromises = selectedDevices.map(device => 
+        supabase.functions.invoke('blynk-proxy', {
+          body: {
+            authToken: device.authToken,
+            method: 'GET',
+            endpoint: `/update?token=${device.authToken}&V1=${encodeURIComponent(sender)}`,
+          },
+        })
+      );
+
+      const sendPromises = [...sendMessagePromises, ...sendSenderPromises];
 
       const results = await Promise.allSettled(sendPromises);
       
