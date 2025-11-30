@@ -18,14 +18,13 @@ serve(async (req) => {
       throw new Error('Auth token is required');
     }
 
-    console.log(`Blynk API request: ${method} ${endpoint}`);
-
     const blynkUrl = `https://blynk.cloud/external/api${endpoint}`;
+    console.log(`[Blynk Proxy] Full URL: ${blynkUrl}`);
+    console.log(`[Blynk Proxy] Method: ${method || 'GET'}`);
     
     const options: RequestInit = {
       method: method || 'GET',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json',
       },
     };
@@ -37,7 +36,8 @@ serve(async (req) => {
     const response = await fetch(blynkUrl, options);
     const responseData = await response.text();
 
-    console.log(`Blynk response status: ${response.status}`);
+    console.log(`[Blynk Proxy] Response status: ${response.status}`);
+    console.log(`[Blynk Proxy] Response body: ${responseData}`);
 
     return new Response(
       JSON.stringify({
