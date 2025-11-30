@@ -149,33 +149,40 @@ const Dashboard = () => {
       await Promise.all(resetPromises);
 
       // Send V0 (message) and V2 (urgency) first
-      const sendMessagePromises = selectedDevices.map(device => 
-        supabase.functions.invoke('blynk-proxy', {
+      const sendMessagePromises = selectedDevices.map(device => {
+        const endpoint = `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V2=${urgency}`;
+        console.log(`[Blynk] Sending V0+V2 to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
+        return supabase.functions.invoke('blynk-proxy', {
           body: {
             authToken: device.authToken,
             method: 'GET',
-            endpoint: `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V2=${urgency}`,
+            endpoint,
           },
-        })
-      );
+        });
+      });
 
-      // Send V1 (sender) separately to ensure it updates
-      const sendSenderPromises = selectedDevices.map(device => 
-        supabase.functions.invoke('blynk-proxy', {
+      // Wait for V0+V2 to complete first
+      await Promise.all(sendMessagePromises);
+      console.log('[Blynk] V0+V2 sent successfully');
+
+      // Send V1 (sender) separately to ensure it updates - MUST be a separate call
+      const sendSenderPromises = selectedDevices.map(device => {
+        const endpoint = `/update?token=${device.authToken}&V1=${encodeURIComponent(sender)}`;
+        console.log(`[Blynk] Sending V1 (sender="${sender}") to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
+        return supabase.functions.invoke('blynk-proxy', {
           body: {
             authToken: device.authToken,
             method: 'GET',
-            endpoint: `/update?token=${device.authToken}&V1=${encodeURIComponent(sender)}`,
+            endpoint,
           },
-        })
-      );
+        });
+      });
 
-      const sendPromises = [...sendMessagePromises, ...sendSenderPromises];
-
-      const results = await Promise.allSettled(sendPromises);
+      const senderResults = await Promise.allSettled(sendSenderPromises);
+      console.log('[Blynk] V1 sender results:', senderResults);
       
-      const successCount = results.filter(r => r.status === 'fulfilled').length;
-      const failCount = results.filter(r => r.status === 'rejected').length;
+      const successCount = senderResults.filter(r => r.status === 'fulfilled').length;
+      const failCount = senderResults.filter(r => r.status === 'rejected').length;
 
       // Save message with acknowledgment tracking
       const messageId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
