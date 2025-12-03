@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getMessages, type BlynkMessage } from '@/lib/blynk';
+import { getMessages, getBlynkConfig, updateMessageAcknowledgment, type BlynkMessage } from '@/lib/blynk';
 import { Clock, User, Send, Check, CheckCheck } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Messages = () => {
   const [messages, setMessages] = useState<BlynkMessage[]>([]);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const loadMessages = () => {
@@ -14,7 +16,58 @@ const Messages = () => {
 
     loadMessages();
 
-    // Listen for acknowledgment updates
+    // Poll V3 for unacknowledged messages
+    const pollAcknowledgments = async () => {
+      const config = getBlynkConfig();
+      const currentMessages = getMessages();
+      
+      // Get recent unacknowledged messages (last 5)
+      const unackedMessages = currentMessages
+        .filter(msg => {
+          const ackCount = msg.acknowledgments ? Object.values(msg.acknowledgments).filter(Boolean).length : 0;
+          const totalDevices = msg.deviceIds?.length || 0;
+          return totalDevices > 0 && ackCount < totalDevices;
+        })
+        .slice(0, 5);
+
+      for (const msg of unackedMessages) {
+        const deviceIds = msg.deviceIds || [];
+        
+        for (const deviceId of deviceIds) {
+          if (msg.acknowledgments?.[deviceId]) continue; // Skip already acknowledged
+          
+          const device = config.devices.find(d => d.id === deviceId);
+          if (!device) continue;
+
+          try {
+            const result = await supabase.functions.invoke('blynk-proxy', {
+              body: {
+                authToken: device.authToken,
+                method: 'GET',
+                endpoint: `/get?token=${device.authToken}&V3`,
+              },
+            });
+
+            const rawValue = result.data?.data;
+            const acknowledged = rawValue === '1' || rawValue === 1;
+            
+            if (acknowledged) {
+              console.log(`[Messages] ✓✓ Acknowledgment received from ${device.deviceName} for message "${msg.message.substring(0, 20)}..."`);
+              updateMessageAcknowledgment(msg.id, deviceId, true);
+              loadMessages(); // Refresh UI
+            }
+          } catch (error) {
+            console.error('Error polling V3:', error);
+          }
+        }
+      }
+    };
+
+    // Start polling every 5 seconds
+    pollIntervalRef.current = setInterval(pollAcknowledgments, 5000);
+    pollAcknowledgments(); // Poll immediately on mount
+
+    // Listen for acknowledgment updates from Dashboard
     const handleAckUpdate = () => {
       loadMessages();
     };
@@ -23,6 +76,9 @@ const Messages = () => {
 
     return () => {
       window.removeEventListener('acknowledgment-updated', handleAckUpdate);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
   }, []);
 
