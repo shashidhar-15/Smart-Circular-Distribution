@@ -161,40 +161,66 @@ const Dashboard = () => {
         })
       );
       await Promise.all(resetPromises);
+      console.log('[Blynk] V3 reset complete');
 
-      // Send V0 (message) and V2 (urgency) first
-      console.log(`[Blynk] Urgency value being sent: ${urgency} (${urgency === '1' ? 'URGENT' : 'NORMAL'})`);
-      const sendMessagePromises = selectedDevices.map(device => {
-        const endpoint = `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V2=${urgency}`;
-        console.log(`[Blynk] Sending V0+V2 to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
-        return supabase.functions.invoke('blynk-proxy', {
+      // Step 1: Send V2 (urgency) FIRST as separate calls
+      console.log(`[Blynk] Step 1: Sending V2 urgency=${urgency} (${urgency === '1' ? 'URGENT' : 'NORMAL'})`);
+      const sendUrgencyPromises = selectedDevices.map(async device => {
+        const endpoint = `/update?token=${device.authToken}&V2=${urgency}`;
+        console.log(`[Blynk] Sending V2 to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
+        const result = await supabase.functions.invoke('blynk-proxy', {
           body: {
             authToken: device.authToken,
             method: 'GET',
             endpoint,
           },
         });
+        console.log(`[Blynk] V2 response for ${device.deviceName}:`, result.data);
+        return result;
       });
+      await Promise.all(sendUrgencyPromises);
+      console.log('[Blynk] V2 urgency sent successfully');
 
-      // Wait for V0+V2 to complete first
-      await Promise.all(sendMessagePromises);
-      console.log('[Blynk] V0+V2 sent successfully');
+      // Step 2: Wait 250ms to ensure V2 is synced
+      await new Promise(resolve => setTimeout(resolve, 250));
+      console.log('[Blynk] Step 2: Waited 250ms');
 
-      // Send V1 (sender) separately to ensure it updates - MUST be a separate call
-      const sendSenderPromises = selectedDevices.map(device => {
-        const endpoint = `/update?token=${device.authToken}&V1=${encodeURIComponent(sender)}`;
-        console.log(`[Blynk] Sending V1 (sender="${sender}") to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
-        return supabase.functions.invoke('blynk-proxy', {
+      // Step 3: Send V0 (message) as separate calls
+      console.log(`[Blynk] Step 3: Sending V0 message`);
+      const sendMessagePromises = selectedDevices.map(async device => {
+        const endpoint = `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}`;
+        console.log(`[Blynk] Sending V0 to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
+        const result = await supabase.functions.invoke('blynk-proxy', {
           body: {
             authToken: device.authToken,
             method: 'GET',
             endpoint,
           },
         });
+        console.log(`[Blynk] V0 response for ${device.deviceName}:`, result.data);
+        return result;
+      });
+      await Promise.all(sendMessagePromises);
+      console.log('[Blynk] V0 message sent successfully');
+
+      // Step 4: Send V1 (sender) as separate calls
+      console.log(`[Blynk] Step 4: Sending V1 sender="${sender}"`);
+      const sendSenderPromises = selectedDevices.map(async device => {
+        const endpoint = `/update?token=${device.authToken}&V1=${encodeURIComponent(sender)}`;
+        console.log(`[Blynk] Sending V1 to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
+        const result = await supabase.functions.invoke('blynk-proxy', {
+          body: {
+            authToken: device.authToken,
+            method: 'GET',
+            endpoint,
+          },
+        });
+        console.log(`[Blynk] V1 response for ${device.deviceName}:`, result.data);
+        return result;
       });
 
       const senderResults = await Promise.allSettled(sendSenderPromises);
-      console.log('[Blynk] V1 sender results:', senderResults);
+      console.log('[Blynk] V1 sender sent successfully');
       
       const successCount = senderResults.filter(r => r.status === 'fulfilled').length;
       const failCount = senderResults.filter(r => r.status === 'rejected').length;
