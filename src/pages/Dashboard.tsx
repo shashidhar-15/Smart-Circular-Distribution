@@ -40,8 +40,10 @@ const startAcknowledgmentPolling = (messageId: string, devices: BlynkDevice[]) =
           },
         }).then(result => {
           const rawValue = result.data?.data;
-          const acknowledged = rawValue === '1' || rawValue === 1;
-          console.log(`[Blynk ACK] Device ${device.deviceName} V3=${rawValue} → acknowledged=${acknowledged}`);
+          // Blynk returns array like ["1"], so extract first element
+          const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+          const acknowledged = value === '1' || value === 1 || value === "1";
+          console.log(`[Blynk ACK] Device ${device.deviceName} V3 raw=${JSON.stringify(rawValue)} → value=${value} → acknowledged=${acknowledged}`);
           return {
             deviceId: device.id,
             deviceName: device.deviceName,

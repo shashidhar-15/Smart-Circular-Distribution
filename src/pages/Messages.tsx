@@ -49,7 +49,10 @@ const Messages = () => {
             });
 
             const rawValue = result.data?.data;
-            const acknowledged = rawValue === '1' || rawValue === 1;
+            // Blynk returns array like ["1"], so extract first element
+            const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+            const acknowledged = value === '1' || value === 1 || value === "1";
+            console.log(`[Messages ACK] Device ${device.deviceName} V3 raw=${JSON.stringify(rawValue)} → value=${value} → acknowledged=${acknowledged}`);
             
             if (acknowledged) {
               console.log(`[Messages] ✓✓ Acknowledgment received from ${device.deviceName} for message "${msg.message.substring(0, 20)}..."`);
