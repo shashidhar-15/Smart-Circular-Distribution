@@ -149,6 +149,7 @@ const Dashboard = () => {
       await Promise.all(resetPromises);
 
       // Send V0 (message) and V2 (urgency) first
+      console.log(`[Blynk] Urgency value being sent: ${urgency} (${urgency === '1' ? 'URGENT' : 'NORMAL'})`);
       const sendMessagePromises = selectedDevices.map(device => {
         const endpoint = `/update?token=${device.authToken}&V0=${encodeURIComponent(message)}&V2=${urgency}`;
         console.log(`[Blynk] Sending V0+V2 to ${device.deviceName}:`, `https://blynk.cloud/external/api${endpoint}`);
