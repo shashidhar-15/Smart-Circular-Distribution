@@ -38,20 +38,32 @@ const startAcknowledgmentPolling = (messageId: string, devices: BlynkDevice[]) =
             method: 'GET',
             endpoint: `/get?token=${device.authToken}&V3`,
           },
-        }).then(result => ({
-          deviceId: device.id,
-          acknowledged: result.data?.data === '1' || result.data?.data === 1,
-        }))
+        }).then(result => {
+          const rawValue = result.data?.data;
+          const acknowledged = rawValue === '1' || rawValue === 1;
+          console.log(`[Blynk ACK] Device ${device.deviceName} V3=${rawValue} → acknowledged=${acknowledged}`);
+          return {
+            deviceId: device.id,
+            deviceName: device.deviceName,
+            acknowledged,
+          };
+        })
       );
 
       const ackResults = await Promise.all(ackPromises);
       
-      ackResults.forEach(({ deviceId, acknowledged }) => {
+      ackResults.forEach(({ deviceId, deviceName, acknowledged }) => {
+        if (acknowledged) {
+          console.log(`[Blynk ACK] ✓✓ Acknowledgment received from ${deviceName}!`);
+        }
         updateMessageAcknowledgment(messageId, deviceId, acknowledged);
       });
 
       // Check if all devices have acknowledged
       allAcknowledged = ackResults.every(r => r.acknowledged);
+      if (allAcknowledged) {
+        console.log(`[Blynk ACK] ✓✓ All devices acknowledged message ${messageId}`);
+      }
 
       // Dispatch custom event to notify Messages page of updates
       window.dispatchEvent(new CustomEvent('acknowledgment-updated'));
