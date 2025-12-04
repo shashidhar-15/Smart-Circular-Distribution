@@ -69,3 +69,10 @@ export const getMessages = (): BlynkMessage[] => {
   const messages = localStorage.getItem('blynk_messages');
   return messages ? JSON.parse(messages) : [];
 };
+
+export const trimMessages = (keepCount: number) => {
+  const messages = getMessages();
+  const trimmed = messages.slice(0, keepCount);
+  localStorage.setItem('blynk_messages', JSON.stringify(trimmed));
+  return trimmed;
+};
