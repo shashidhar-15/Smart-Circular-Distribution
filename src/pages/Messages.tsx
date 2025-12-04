@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getMessages, getBlynkConfig, updateMessageAcknowledgment, trimMessages, type BlynkMessage } from '@/lib/blynk';
+import { getMessages, getBlynkConfig, updateMessageAcknowledgment, type BlynkMessage } from '@/lib/blynk';
 import { Clock, User, Send, Check, CheckCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -10,12 +10,6 @@ const Messages = () => {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // One-time cleanup: keep only 2 most recent messages (remove this after cleanup)
-    const allMessages = getMessages();
-    if (allMessages.length > 2) {
-      trimMessages(2);
-    }
-    
     const loadMessages = () => {
       setMessages(getMessages());
     };
