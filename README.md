@@ -39,15 +39,17 @@ The system allows faculty members or administrators to send circulars through a 
 
 ## System Architecture
 
+```text
 Web Dashboard
-↓
+      ↓
 Blynk Cloud
-↓
+      ↓
 ESP32 Device
-↓
+      ↓
 OLED Display + Buzzer
-↓
+      ↓
 Acknowledgement Feedback
+```
 
 ## Working Principle
 
