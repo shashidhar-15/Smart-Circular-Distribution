@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# IoT Based Smart Circular Distribution System
 
-## Project info
+## Overview
 
-**URL**: https://lovable.dev/projects/c3f24808-d7f6-4227-805a-b3557efaef11
+The Smart Circular Distribution System is an IoT-enabled communication platform designed to automate classroom notice distribution in educational institutions.
 
-## How can I edit this code?
+The system allows faculty members or administrators to send circulars through a web dashboard. Messages are transmitted through Blynk Cloud and displayed on ESP32-based classroom units equipped with OLED displays. The system also supports message acknowledgement and urgency-based alerts.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+* Real-time circular distribution
+* ESP32 WiFi communication
+* OLED-based message display
+* Urgent and normal message classification
+* Audible buzzer alerts
+* Message acknowledgement tracking
+* Multi-classroom support
+* Cloud-based communication using Blynk
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c3f24808-d7f6-4227-805a-b3557efaef11) and start prompting.
+## Hardware Components
 
-Changes made via Lovable will be committed automatically to this repo.
+* ESP32 Development Board
+* 128×64 OLED Display
+* Active Buzzer
+* Push Button
+* WiFi Network
 
-**Use your preferred IDE**
+## Software Technologies
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+* Arduino IDE
+* Embedded C
+* Blynk IoT Platform
+* HTML
+* CSS
+* JavaScript
+* React
+* TypeScript
+* Supabase
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## System Architecture
 
-Follow these steps:
+Web Dashboard
+↓
+Blynk Cloud
+↓
+ESP32 Device
+↓
+OLED Display + Buzzer
+↓
+Acknowledgement Feedback
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Working Principle
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Faculty enters a circular through the web dashboard.
+2. The message is sent to the Blynk Cloud platform.
+3. ESP32 devices connected through WiFi receive the circular.
+4. The OLED display presents the message to students.
+5. The buzzer alerts users when a new circular arrives.
+6. Users acknowledge the message using a push button.
+7. Acknowledgement status is updated on the dashboard.
 
-# Step 3: Install the necessary dependencies.
-npm i
+## Results
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+* Reliable real-time message delivery
+* Successful multi-device communication
+* OLED scrolling support for long messages
+* Low-latency acknowledgement feedback
+* Scalable architecture for multiple classrooms
 
-**Edit a file directly in GitHub**
+## Future Enhancements
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+* Mobile application integration
+* Voice-based circular announcements
+* Multi-building deployment
+* Cloud database logging
+* Advanced notification management
 
-**Use GitHub Codespaces**
+## Author
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Shashidhar Math
 
-## What technologies are used for this project?
+Electronics and Communication Engineering
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/c3f24808-d7f6-4227-805a-b3557efaef11) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+SDM Institute of Technology
